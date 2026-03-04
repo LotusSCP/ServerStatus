@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="RemoteAdminConsole.ConfigBase" Collapsed="true">
+    <Position X="1.75" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAgAAAAAAA=</HashCode>
+      <FileName>ConfigBase.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RemoteAdminConsole.ConfigKapalı" Collapsed="true">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AICCAAAAAAAAAIEASAEAQABACARAAAgiAAAAAgAAAAA=</HashCode>
+      <FileName>ConfigKapalı.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="RemoteAdminConsole.CustomCommandKapalı" Collapsed="true">
+    <Position X="7" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAgAIAAAAAABAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ConfigKapalı.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RemoteAdminConsole.Plugin" Collapsed="true">
+    <Position X="5.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IgIAAAAAIAAAAAAggAAAAAUAAIAAQAAARQCAgIAACAA=</HashCode>
+      <FileName>Plugin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="RemoteAdminConsole.Config" Collapsed="true">
+    <Position X="2.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AICCAAAAAAAAAIEASAEAQABACARAAAgiAAAAAgAAAAA=</HashCode>
+      <FileName>Plugin.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="RemoteAdminConsole.CustomCommand" Collapsed="true">
+    <Position X="5.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAQAAgAIAAAAAABAQAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Plugin.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

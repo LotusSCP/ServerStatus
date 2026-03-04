@@ -1,0 +1,253 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Discord;
+using Discord.WebSocket;
+using Exiled.API.Features;
+
+namespace PlayerStatsLiveDC
+{
+    public class DiscordBot
+    {
+        private DiscordSocketClient _client;
+        private string _token;
+        private ulong _guildId;
+        private List<ulong> _allowedRoles;
+
+        public DiscordBot(string token, ulong guildId, List<ulong> allowedRoles)
+        {
+            _token = token;
+            _guildId = guildId;
+            _allowedRoles = allowedRoles;
+        }
+
+        public async Task StartAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_token))
+            {
+                Log.Warn("Discord bot token is empty. Bot will not start.");
+                return;
+            }
+
+            try 
+            {
+                var config = new DiscordSocketConfig()
+                {
+                    GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages
+                };
+
+                _client = new DiscordSocketClient(config);
+                _client.Log += LogAsync;
+                _client.Ready += ReadyAsync;
+                _client.SlashCommandExecuted += SlashCommandHandler;
+
+                await _client.LoginAsync(TokenType.Bot, _token);
+                await _client.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Failed to start Discord bot: {ex}");
+            }
+        }
+
+        public async Task StopAsync()
+        {
+            if (_client != null)
+            {
+                try
+                {
+                    await _client.StopAsync();
+                    await _client.LogoutAsync();
+                }
+                catch { }
+                finally
+                {
+                    _client.Dispose();
+                    _client = null;
+                }
+            }
+        }
+
+        private Task LogAsync(LogMessage log)
+        {
+            Log.Info($"[Discord] {log.ToString()}");
+            return Task.CompletedTask;
+        }
+
+        private async Task ReadyAsync()
+        {
+            Log.Info($"[Discord] Connected as {_client.CurrentUser}");
+
+            var cmd = new SlashCommandBuilder()
+                .WithName("scpsl")
+                .WithDescription("Execute a server command")
+                .AddOption("command", ApplicationCommandOptionType.String, "The command to execute", isRequired: true);
+
+            var sendCmd = new SlashCommandBuilder()
+                .WithName("sendcmd")
+                .WithDescription("Execute an arbitrary server command (Admin)")
+                .AddOption("query", ApplicationCommandOptionType.String, "The command string to execute", isRequired: true);
+
+            try
+            {
+                if (_guildId != 0)
+                {
+                    var guild = _client.GetGuild(_guildId);
+                    if (guild != null)
+                    {
+                        await guild.CreateApplicationCommandAsync(cmd.Build());
+                        await guild.CreateApplicationCommandAsync(sendCmd.Build());
+                        Log.Info($"[Discord] Registered slash commands for guild {_guildId}");
+                    }
+                    else
+                    {
+                        Log.Warn($"[Discord] Could not find guild {_guildId}");
+                    }
+                }
+                else
+                {
+                    await _client.CreateGlobalApplicationCommandAsync(cmd.Build());
+                    await _client.CreateGlobalApplicationCommandAsync(sendCmd.Build());
+                    Log.Info($"[Discord] Registered global slash commands");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[Discord] Error registering command: {ex}");
+            }
+        }
+
+        private async Task SlashCommandHandler(SocketSlashCommand command)
+        {
+            if (command.CommandName != "scpsl" && command.CommandName != "sendcmd") return;
+
+            var user = command.User as SocketGuildUser;
+            List<ulong> userRoles = user?.Roles.Select(r => r.Id).ToList() ?? new List<ulong>();
+
+            string inputCmd = command.Data.Options.First().Value.ToString();
+            
+            // If the command is sendcmd, we treat it as if the user typed "sendcmd <args>"
+            if (command.CommandName == "sendcmd")
+            {
+                inputCmd = $"sendcmd {inputCmd}";
+            }
+
+            // Use safe response to handle version mismatches (Discord.Net 2.x vs 3.x)
+            await RespondSafeAsync(command, $"Processing: `{inputCmd}`...", ephemeral: true);
+
+            string response = "Command processed.";
+            try
+            {
+                if (Plugin.Instance != null)
+                {
+                    // Use Plugin.Instance.ProcessCommand to handle permissions and logic
+                    // We need to pass the user's roles
+                    response = Plugin.Instance.ProcessCommand(inputCmd, userRoles);
+                    
+                    if (string.IsNullOrEmpty(response))
+                        response = "Command executed (no output).";
+                }
+                else
+                {
+                    response = "Plugin instance is null.";
+                }
+            }
+            catch (Exception ex)
+            {
+                response = $"Error executing command: {ex.Message}";
+            }
+
+            if (response.Length > 1900) 
+                response = response.Substring(0, 1900) + "... (truncated)";
+
+            await ModifyOriginalResponseSafeAsync(command, $"```\n{response}\n```");
+        }
+
+        // Helper to safely call RespondAsync using reflection to support multiple Discord.Net versions
+        private async Task RespondSafeAsync(SocketSlashCommand command, string text, bool ephemeral = false)
+        {
+            try
+            {
+                // Try to find the method directly first (standard 3.x path)
+                // If this is running in a 3.x environment, this reflection might seem redundant but it handles the "MissingMethodException" 
+                // by finding the method that *actually* exists at runtime.
+                
+                var methods = command.GetType().GetMethods()
+                    .Where(m => m.Name == "RespondAsync")
+                    .ToList();
+
+                // Strategy 1: Look for 3.x signature with ephemeral
+                var method3x = methods.FirstOrDefault(m => 
+                {
+                    var p = m.GetParameters();
+                    return p.Any(param => param.Name == "ephemeral");
+                });
+
+                if (method3x != null)
+                {
+                    // Invoke 3.x method
+                    // We need to map arguments. Most are optional.
+                    // 3.x signature usually: (text, embeds, isTTS, ephemeral, allowedMentions, components, embed, options, poll)
+                    // We will invoke with named arguments logic by creating an array of arguments based on parameters
+                    
+                    var parameters = method3x.GetParameters();
+                    object[] args = new object[parameters.Length];
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        if (parameters[i].HasDefaultValue) args[i] = parameters[i].DefaultValue;
+                        else args[i] = null; // Should not happen for optional params usually
+
+                        if (parameters[i].Name == "text") args[i] = text;
+                        if (parameters[i].Name == "ephemeral") args[i] = ephemeral;
+                    }
+                    
+                    var task = (Task)method3x.Invoke(command, args);
+                    await task;
+                    return;
+                }
+
+                // Strategy 2: Look for 2.x signature (no ephemeral)
+                var method2x = methods.FirstOrDefault(m => 
+                {
+                    var p = m.GetParameters();
+                    return p.Any(param => param.Name == "text" && param.ParameterType == typeof(string));
+                });
+
+                if (method2x != null)
+                {
+                    // 2.x doesn't support ephemeral, so we just send text
+                    var parameters = method2x.GetParameters();
+                    object[] args = new object[parameters.Length];
+                    for (int i = 0; i < args.Length; i++)
+                    {
+                        if (parameters[i].HasDefaultValue) args[i] = parameters[i].DefaultValue;
+                        else args[i] = null;
+
+                        if (parameters[i].Name == "text") args[i] = text;
+                    }
+
+                    var task = (Task)method2x.Invoke(command, args);
+                    await task;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[Discord] Error in RespondSafeAsync: {ex}");
+            }
+        }
+
+        private async Task ModifyOriginalResponseSafeAsync(SocketSlashCommand command, string text)
+        {
+            try
+            {
+                await command.ModifyOriginalResponseAsync(msg => msg.Content = text);
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"[Discord] Error in ModifyOriginalResponseSafeAsync: {ex}");
+            }
+        }
+    }
+}

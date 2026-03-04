@@ -1,0 +1,429 @@
+﻿using Exiled.API.Features;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PlayerStatsLiveDC
+{
+    // Full rewrite of Plugin to provide Discord webhook live player list functionality
+    public class Plugin : Plugin<Config>
+    {
+        public override string Name => "PlayerStatsLiveDC";
+        public override string Author => "Made By atombombasi_55908 (modified)";
+        public override Version Version => new Version(1, 4, 0);
+        public override Version RequiredExiledVersion => new Version(9, 12, 2);
+
+        public static Plugin Instance { get; private set; }
+
+        // Keep existing command TCP listener behavior minimal (can be removed if not needed)
+        private TcpListener listener;
+        private Thread listenerThread;
+
+        private DiscordBot discordBot;
+
+        // Webhook updater
+        private System.Threading.Timer webhookTimer;
+        private string lastWebhookMessageId;
+        private static readonly string LastWebhookFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory ?? ".", "PlayerStatsLiveDC_lastwebhook.txt");
+        private static readonly HttpClient httpClient = new HttpClient();
+        // State tracking for webhook updates
+        private bool lastKnownOnline = false;
+        private HashSet<string> lastKnownPlayerIds = new HashSet<string>();
+        private bool hasCreatedInitialMessage = false;
+        // Optional bot posting via bot token + channel (REST)
+        private string lastBotMessageId;
+        private static readonly string LastBotMessageFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory ?? ".", "PlayerStatsLiveDC_lastbotmsg.txt");
+        private System.Threading.Timer playerWatcherTimer;
+
+        public override void OnEnabled()
+        {
+            Instance = this;
+
+            // Start minimal command server (existing behavior)
+            StartServer();
+
+            // Start Discord bot (slash commands)
+            if (!string.IsNullOrEmpty(Config.DiscordBotToken))
+            {
+                discordBot = new DiscordBot(Config.DiscordBotToken, Config.DiscordGuildId, Config.DiscordRoleIds);
+                Task.Run(async () => await discordBot.StartAsync());
+            }
+
+            // Start webhook updater if enabled
+            StartWebhookUpdater();
+
+            // Start player watcher for near-instant updates on join/leave
+            StartPlayerWatcher();
+
+            Log.Info($"[PlayerStatsLiveDC] Enabled. WebhookEnabled={Config.WebhookEnabled}");
+        }
+
+        public override void OnDisabled()
+        {
+            try { listener?.Stop(); } catch { }
+            if (listenerThread != null && listenerThread.IsAlive) listenerThread.Interrupt();
+
+            StopWebhookUpdater();
+
+            StopPlayerWatcher();
+
+            if (discordBot != null)
+            {
+                discordBot.StopAsync().GetAwaiter().GetResult();
+                discordBot = null;
+            }
+
+            Instance = null;
+        }
+
+        #region TCP command server (unchanged behavior, lightweight)
+        private void StartServer()
+        {
+            listenerThread = new Thread(() =>
+            {
+                try
+                {
+                    IPAddress bindIp = ResolveBindIp(Config.BindAddress);
+                    int listenPort = Config.CustomPort > 0 ? Config.CustomPort : Config.Port;
+
+                    try
+                    {
+                        listener = new TcpListener(bindIp, listenPort);
+                        listener.Start();
+                        Log.Info($"TCP listener bound to {bindIp} on port {listenPort}.");
+                    }
+                    catch (SocketException)
+                    {
+                        bindIp = IPAddress.Any;
+                        listener = new TcpListener(bindIp, listenPort);
+                        listener.Start();
+                        Log.Warn($"Bind IP invalid. Falling back to {bindIp} on port {listenPort}.");
+                    }
+
+                    while (true)
+                    {
+                        TcpClient client = listener.AcceptTcpClient();
+                        Thread clientThread = new Thread(() => HandleClient(client)) { IsBackground = true };
+                        clientThread.Start();
+                    }
+                }
+                catch (ThreadInterruptedException) { }
+                catch (Exception ex)
+                {
+                    Log.Error("TCP Server error: " + ex);
+                }
+            }) { IsBackground = true };
+
+            listenerThread.Start();
+        }
+
+        private void HandleClient(TcpClient client)
+        {
+            using (client)
+            using (var stream = client.GetStream())
+            using (var reader = new StreamReader(stream, Encoding.UTF8))
+            using (var writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+            {
+                try
+                {
+                    writer.WriteLine("OK: Connected. Send commands (e.g. /help). (This server has reduced feature-set.)");
+                    while (client.Connected)
+                    {
+                        var line = reader.ReadLine();
+                        if (line == null) break;
+                        if (line.StartsWith("/")) line = line.Substring(1);
+                        if (string.Equals(line.Trim(), "players", StringComparison.InvariantCultureIgnoreCase))
+                            writer.WriteLine($"Players online: {Exiled.API.Features.Player.List.Count()}");
+                        else if (string.Equals(line.Trim(), "help", StringComparison.InvariantCultureIgnoreCase))
+                            writer.WriteLine("Available: /players, /help");
+                        else
+                            writer.WriteLine("Unknown command");
+                        writer.WriteLine("END");
+                    }
+                }
+                catch (IOException) { }
+                catch (Exception ex)
+                {
+                    Log.Error("Client handling error: " + ex);
+                }
+            }
+        }
+        #endregion
+
+        #region Webhook updater
+        private void StartWebhookUpdater()
+        {
+            try
+            {
+                if (!Config.WebhookEnabled) return;
+                if (string.IsNullOrWhiteSpace(Config.WebhookUrl))
+                {
+                    Log.Warn("WebhookEnabled is true but WebhookUrl is empty.");
+                    return;
+                }
+
+                // Load last message id if exists
+                try { if (File.Exists(LastWebhookFilePath)) lastWebhookMessageId = File.ReadAllText(LastWebhookFilePath).Trim(); } catch { }
+
+                int interval = Math.Max(5, Config.WebhookIntervalSeconds);
+                webhookTimer = new System.Threading.Timer(_ => Task.Run(() => SendOrUpdateWebhookAsync()), null, 0, interval * 1000);
+                Log.Info($"PlayerStatsLiveDC: Webhook updater started, interval={interval}s");
+            }
+            catch (Exception ex) { Log.Error("StartWebhookUpdater error: " + ex); }
+        }
+
+        private void StopWebhookUpdater()
+        {
+            try
+            {
+                webhookTimer?.Dispose();
+                webhookTimer = null;
+            }
+            catch { }
+        }
+
+        private async Task SendOrUpdateWebhookAsync()
+        {
+            try
+            {
+                // Build state
+                var players = Exiled.API.Features.Player.List.ToList();
+                var currentPlayerIds = new HashSet<string>(players.Select(p => p.UserId ?? string.Empty));
+                int currentCount = currentPlayerIds.Count;
+
+                // Determine online: consider online if there are players OR listener thread running
+                bool currentOnline = currentCount > 0 || (listener != null && listenerThread != null && listenerThread.IsAlive);
+
+                // If nothing changed and we already have a message, skip
+                bool playersChanged = !currentPlayerIds.SetEquals(lastKnownPlayerIds);
+                if (!playersChanged && currentOnline == lastKnownOnline && !string.IsNullOrEmpty(lastWebhookMessageId))
+                {
+                    // no change
+                    return;
+                }
+
+                // Build content
+                var content = BuildWebhookContent();
+                if (string.IsNullOrWhiteSpace(content)) return;
+                var payloadContent = "```\n" + content + "\n```";
+
+                // Prepare json payload
+                var payloadObj = new { content = payloadContent, allowed_mentions = new { parse = new string[] { } } };
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(payloadObj);
+
+                // Try editing if we have message id
+                if (!string.IsNullOrEmpty(lastWebhookMessageId))
+                {
+                    var editUrl = EnsureNoTrailingSlash(Config.WebhookUrl) + "/messages/" + lastWebhookMessageId;
+                    var req = new HttpRequestMessage(new HttpMethod("PATCH"), editUrl)
+                    {
+                        Content = new StringContent(json, Encoding.UTF8, "application/json")
+                    };
+
+                    try
+                    {
+                        var resp = await httpClient.SendAsync(req).ConfigureAwait(false);
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            // Edited
+                            lastKnownPlayerIds = currentPlayerIds;
+                            lastKnownOnline = currentOnline;
+                            hasCreatedInitialMessage = true;
+                            Log.Info("Webhook message edited.");
+                            return;
+                        }
+                        else
+                        {
+                            Log.Warn($"Editing webhook message failed: {resp.StatusCode}. Will recreate.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Warn("Editing webhook message exception: " + ex.Message);
+                    }
+                }
+
+                // Create new message
+                try
+                {
+                    var postUrl = Config.WebhookUrl + (Config.WebhookUrl.Contains("?") ? "&wait=true" : "?wait=true");
+                    var postResp = await httpClient.PostAsync(postUrl, new StringContent(json, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+                    if (postResp.IsSuccessStatusCode)
+                    {
+                        var body = await postResp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        string id = null;
+                        try
+                        {
+                            var marker = "\"id\":";
+                            var idx = body.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+                            if (idx >= 0)
+                            {
+                                var start = body.IndexOf('"', idx + marker.Length);
+                                if (start >= 0)
+                                {
+                                    start++;
+                                    var end = body.IndexOf('"', start);
+                                    if (end > start)
+                                    {
+                                        id = body.Substring(start, end - start);
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+
+                        if (!string.IsNullOrEmpty(id))
+                        {
+                            lastWebhookMessageId = id;
+                            try { File.WriteAllText(LastWebhookFilePath, lastWebhookMessageId); } catch { }
+                        }
+
+                        lastKnownPlayerIds = currentPlayerIds;
+                        lastKnownOnline = currentOnline;
+                        hasCreatedInitialMessage = true;
+                        Log.Info("Webhook message posted.");
+                    }
+                    else
+                    {
+                        Log.Warn($"Posting webhook message failed: {postResp.StatusCode}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("SendOrUpdateWebhookAsync post error: " + ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("SendOrUpdateWebhookAsync error: " + ex);
+            }
+        }
+
+        private static string EnsureNoTrailingSlash(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return url;
+            return url.TrimEnd('/');
+        }
+
+        private string BuildWebhookContent()
+        {
+            try
+            {
+                var players = Exiled.API.Features.Player.List.ToList();
+                int current = players.Count;
+                int maxPlayers = 0;
+                try
+                {
+                    // Use reflection to avoid compile-time dependency on a possibly-missing property
+                    var serverType = typeof(Exiled.API.Features.Server);
+                    var prop = serverType.GetProperty("MaxPlayers");
+                    if (prop != null)
+                    {
+                        var val = prop.GetValue(null);
+                        if (val is int) maxPlayers = (int)val;
+                    }
+                }
+                catch { maxPlayers = 0; }
+
+                bool isOnline = true;
+                // A simple heuristic: if the plugin is enabled and listener thread is alive, assume online.
+                if (listener == null || (listenerThread != null && !listenerThread.IsAlive)) isOnline = false;
+
+                var sb = new StringBuilder();
+                sb.AppendLine($"Sunucu #{Config.ServerNumber}");
+                sb.AppendLine("-------------------------------------------------------");
+                sb.AppendLine();
+                sb.AppendLine($"Durum: {(isOnline ? "Online" : "Offline")}");
+                sb.AppendLine();
+                sb.AppendLine($"Oyuncular: {current}/{(maxPlayers > 0 ? maxPlayers.ToString() : "bilinmiyor")}");
+                int activeAdmins = players.Count(p => IsPlayerAdmin(p));
+                sb.AppendLine($"Aktif Yetkililer: {activeAdmins}");
+                sb.AppendLine();
+                sb.AppendLine($"IP: {(string.IsNullOrWhiteSpace(Config.ServerIPOverride) ? "bilinmiyor" : Config.ServerIPOverride)}");
+                sb.AppendLine();
+                sb.AppendLine("Oyuncu listesi:");
+
+                int limit = Math.Max(0, Config.WebhookMaxPlayerList);
+                var ordered = new List<Exiled.API.Features.Player>(players);
+                ordered.Sort((a, b) => string.Compare(a?.Nickname ?? string.Empty, b?.Nickname ?? string.Empty, StringComparison.InvariantCultureIgnoreCase));
+                for (int i = 0; i < ordered.Count && (limit == 0 || i < limit); i++)
+                {
+                    var p = ordered[i];
+                    sb.AppendLine($"{i + 1}. {p.Nickname} ({p.UserId})");
+                }
+
+                sb.AppendLine();
+                sb.AppendLine("--------------------------------------------------------");
+                return sb.ToString().TrimEnd();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("BuildWebhookContent error: " + ex);
+                return null;
+            }
+        }
+
+        // Basic check whether a player is admin - try common properties safely
+        private bool IsPlayerAdmin(Exiled.API.Features.Player p)
+        {
+            try
+            {
+                // Exiled provides an IsAdmin flag in many versions
+                var prop = p.GetType().GetProperty("IsAdmin");
+                if (prop != null && prop.PropertyType == typeof(bool))
+                {
+                    return (bool)prop.GetValue(p);
+                }
+
+                // Fallback: check reference hub or group permissions if available
+                return false;
+            }
+            catch { return false; }
+        }
+
+        #endregion
+
+        #region Helpers (unchanged)
+        private static IPAddress ResolveBindIp(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip)) return IPAddress.Any;
+            try
+            {
+                var addrs = Dns.GetHostAddresses(ip);
+                var v4 = addrs.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+                if (v4 != null && IsLocalAddress(v4)) return v4;
+            }
+            catch { }
+            return IPAddress.Any;
+        }
+
+        private static bool IsLocalAddress(IPAddress address)
+        {
+            try
+            {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    var props = ni.GetIPProperties();
+                    foreach (var ua in props.UnicastAddresses)
+                    {
+                        if (ua.Address.AddressFamily == AddressFamily.InterNetwork && ua.Address.Equals(address)) return true;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+
+        #endregion
+    }
+}

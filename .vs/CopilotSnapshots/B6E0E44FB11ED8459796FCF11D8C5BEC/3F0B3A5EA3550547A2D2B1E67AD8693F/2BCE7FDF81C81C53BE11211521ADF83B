@@ -1,0 +1,348 @@
+﻿using Exiled.API.Features;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+namespace PlayerStatsLiveDC
+{
+    public class Plugin : Plugin<Config>
+    {
+        public override string Name => "PlayerStatsLiveDC";
+        public override string Author => "Made By atombombasi_55908";
+        public override Version Version => new Version(1, 3, 5);
+        public override Version RequiredExiledVersion => new Version(9, 12, 2);
+
+        public static Plugin Instance { get; private set; }
+        private TcpListener listener;
+        private Thread listenerThread;
+        private DiscordBot discordBot;
+
+        // Commands that are considered privileged (require DiscordRoleIds unless not configured)
+        private static readonly HashSet<string> PrivilegedCommands = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            "restart",
+            "roundrestart",
+            "softrestart",
+            "nuke",
+            "stopnuke",
+            "cassie",
+            "broadcast",
+            "bc",
+            "raw",
+            "sendcmd"
+        };
+
+        public override void OnEnabled()
+        {
+            Instance = this;
+            StartServer();
+
+            // Start Discord Bot
+            if (!string.IsNullOrEmpty(Config.DiscordBotToken))
+            {
+                discordBot = new DiscordBot(Config.DiscordBotToken, Config.DiscordGuildId, Config.DiscordRoleIds);
+                System.Threading.Tasks.Task.Run(async () => await discordBot.StartAsync());
+            }
+
+            Log.Info($"[PlayerStatsLiveDC] Active! Listen IP: {Config.ip} | Port: {Config.customport}");
+        }
+
+        public override void OnDisabled()
+        {
+            try { listener?.Stop(); } catch { }
+            if (listenerThread != null && listenerThread.IsAlive) listenerThread.Interrupt();
+
+            if (discordBot != null)
+            {
+                discordBot.StopAsync().GetAwaiter().GetResult();
+                discordBot = null;
+            }
+
+            Instance = null;
+        }
+
+        private void StartServer()
+        {
+            listenerThread = new Thread(() =>
+            {
+                try
+                {
+                    IPAddress bindIp = ResolveBindIp(Config.BindAddress);
+                    int listenPort = Config.CustomPort > 0 ? Config.CustomPort : Config.Port;
+
+                    try
+                    {
+                        listener = new TcpListener(bindIp, listenPort);
+                        listener.Start();
+                        Log.Info($"TCP listener bound to {bindIp} on port {listenPort}.");
+                    }
+                    catch (SocketException)
+                    {
+                        bindIp = IPAddress.Any;
+                        listener = new TcpListener(bindIp, listenPort);
+                        listener.Start();
+                        Log.Warn($"Bind IP invalid. Falling back to {bindIp} on port {listenPort}.");
+                    }
+
+                    while (true)
+                    {
+                        TcpClient client = listener.AcceptTcpClient();
+                        Thread clientThread = new Thread(() => HandleClient(client)) { IsBackground = true };
+                        clientThread.Start();
+                    }
+                }
+                catch (ThreadInterruptedException) { }
+                catch (Exception ex)
+                {
+                    Log.Error("TCP Server error: " + ex);
+                }
+            })
+            { IsBackground = true };
+
+            listenerThread.Start();
+        }
+
+        private void HandleClient(TcpClient client)
+        {
+            using (client)
+            using (NetworkStream stream = client.GetStream())
+            using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true })
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(Config.Password))
+                    {
+                        string password = reader.ReadLine() ?? "";
+                        if (password != Config.Password)
+                        {
+                            writer.WriteLine("ERROR: Incorrect password!");
+                            return;
+                        }
+                    }
+
+                    List<ulong> providedRoles = null;
+                    if ((Config.DiscordRoleIds != null && Config.DiscordRoleIds.Count > 0)
+                        || (Config.DiscordOwnerRoleIds != null && Config.DiscordOwnerRoleIds.Count > 0))
+                    {
+                        string rolesHeader = reader.ReadLine() ?? "";
+                        if (!rolesHeader.StartsWith("roles:", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            writer.WriteLine("ERROR: Roles header required. Send: roles: <id1>,<id2>");
+                            return;
+                        }
+
+                        providedRoles = rolesHeader.Substring(6)
+                            .Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(s =>
+                            {
+                                ulong.TryParse(s.Trim(), out ulong v);
+                                return v;
+                            })
+                            .Where(v => v != 0UL)
+                            .ToList();
+
+                        if ((Config.DiscordRoleIds != null && Config.DiscordRoleIds.Count > 0)
+                            || (Config.DiscordOwnerRoleIds != null && Config.DiscordOwnerRoleIds.Count > 0))
+                        {
+                            if (providedRoles.Count == 0)
+                            {
+                                writer.WriteLine("ERROR: No valid role IDs provided.");
+                                return;
+                            }
+                        }
+                    }
+
+                    writer.WriteLine("OK: Connected. Send commands (e.g. /help).");
+
+                    while (client.Connected)
+                    {
+                        string line = reader.ReadLine();
+                        if (line == null) break;
+                        if (line.StartsWith("roles:", StringComparison.InvariantCultureIgnoreCase)) continue;
+
+                        string response = ProcessCommand(line, providedRoles);
+                        if (!string.IsNullOrEmpty(response))
+                            writer.WriteLine(response);
+                        writer.WriteLine("END");
+                    }
+                }
+                catch (IOException) { }
+                catch (Exception ex)
+                {
+                    Log.Error("Client handling error: " + ex);
+                }
+            }
+        }
+
+        private bool HasMatchingRole(List<ulong> provided)
+        {
+            if (Config.DiscordRoleIds == null || Config.DiscordRoleIds.Count == 0) return true;
+            if (provided == null || provided.Count == 0) return false;
+            return provided.Any(id => Config.DiscordRoleIds.Contains(id));
+        }
+
+        private bool HasOwnerRole(List<ulong> provided)
+        {
+            if (Config.DiscordOwnerRoleIds == null || Config.DiscordOwnerRoleIds.Count == 0) return false;
+            if (provided == null || provided.Count == 0) return false;
+            return provided.Any(id => Config.DiscordOwnerRoleIds.Contains(id));
+        }
+
+        public string ProcessCommand(string commandLine, List<ulong> providedRoles)
+        {
+            if (string.IsNullOrWhiteSpace(commandLine)) return "";
+            string line = commandLine.Trim();
+            if (line.StartsWith("/")) line = line.Substring(1).Trim();
+
+            string[] parts = line.Split(new[] { ' ' }, 2);
+            string baseCmd = parts.Length > 0 ? parts[0].ToLowerInvariant() : "";
+            string args = parts.Length > 1 ? parts[1] : "";
+
+            if (Config.CustomCommands != null)
+            {
+                var custom = Config.CustomCommands.FirstOrDefault(c => c.Enabled && string.Equals(c.Name, baseCmd, StringComparison.InvariantCultureIgnoreCase));
+                if (custom != null)
+                {
+                    if (custom.RequiresRole && (Config.DiscordRoleIds != null && Config.DiscordRoleIds.Count > 0) && !HasMatchingRole(providedRoles))
+                        return "ERROR: You are not authorized to run this custom command.";
+
+                    string exec = (custom.Command ?? "").Replace("{args}", args);
+                    if (string.IsNullOrWhiteSpace(exec)) return "ERROR: Custom command is empty.";
+
+                    Server.ExecuteCommand(exec);
+                    return $"Custom command '{custom.Name}' executed.";
+                }
+            }
+
+            if (string.Equals(baseCmd, "exit", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (!Config.EnableExit) return "ERROR: Exit disabled by config.";
+                if (!HasOwnerRole(providedRoles)) return "ERROR: Exit is owner-only.";
+                Server.ExecuteCommand("exit");
+                return "Exit issued by owner.";
+            }
+
+            bool requiresRole = PrivilegedCommands.Contains(baseCmd);
+            if (requiresRole && (Config.DiscordRoleIds != null && Config.DiscordRoleIds.Count > 0) && !HasMatchingRole(providedRoles))
+                return "ERROR: You are not authorized to run this command.";
+
+            switch (baseCmd)
+            {
+                case "help": return BuildHelpText();
+                case "players": return $"Players online: {Exiled.API.Features.Player.List.Count()}";
+                case "playerlist": return $"Players: {string.Join(", ", Exiled.API.Features.Player.List.Select(p => p.Nickname).Take(Config.MaxListedPlayers))}{(Exiled.API.Features.Player.List.Count() > Config.MaxListedPlayers ? ", ..." : "")}";
+                case "ridlist": return $"RIDs: {string.Join(", ", Exiled.API.Features.Player.List.Select(p => p.UserId).Take(Config.MaxListedPlayers))}{(Exiled.API.Features.Player.List.Count() > Config.MaxListedPlayers ? ", ..." : "")}";
+                case "broadcast":
+                    if (string.IsNullOrWhiteSpace(args)) return "ERROR: Usage: /broadcast <message>";
+                    Server.ExecuteCommand($"bc {Config.DefaultBroadcastSeconds} {args}");
+                    return "Broadcast sent.";
+                case "bc":
+                    var tokens = args.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                    if (tokens.Length == 2 && int.TryParse(tokens[0], out int secs) && secs > 0)
+                    {
+                        Server.ExecuteCommand($"bc {secs} {tokens[1]}");
+                        return "Broadcast sent.";
+                    }
+                    return "ERROR: Usage: /bc <seconds> <message>";
+                case "cassie":
+                    if (string.IsNullOrWhiteSpace(args)) return "ERROR: Usage: /cassie <message>";
+                    if (!Config.EnableCassie) return "ERROR: Cassie disabled by config.";
+                    Server.ExecuteCommand($"cassie {args}");
+                    return "Cassie message sent.";
+                case "restart":
+                case "roundrestart":
+                    Server.ExecuteCommand("roundrestart");
+                    return "Round restarting...";
+                case "softrestart":
+                    if (!Config.EnableSoftRestart) return "ERROR: Soft restart disabled by config.";
+                    Server.ExecuteCommand("softrestart");
+                    return "Soft restart issued.";
+                case "cmds":
+                    return "Commands: restart, - restarts the server with shutdown kick message roundrestart - restarts the round NOT SERVER RESTART! softrestart - restarts the server without shutdown kick message nuke - activate alpha warhead stopnuke - stops alpha warhead cassie - sends cassie broadcast - sends broadcast bc - sends broadcast raw - sends your command sendcmd - idk just a random command cmds - shows commands ";
+                case "nuke":
+                    if (!Config.EnableWarheadCommands) return "ERROR: Warhead commands disabled by config.";
+                    Exiled.API.Features.Warhead.Start();
+                    return "Warhead countdown started.";
+                case "stopnuke":
+                    if (!Config.EnableWarheadCommands) return "ERROR: Warhead commands disabled by config.";
+                    Exiled.API.Features.Warhead.Stop();
+                    return "Warhead countdown stopped.";
+                case "raw":
+                    if (!Config.Debug) return "ERROR: Raw command execution allowed only when Debug is true in config.";
+                    if (string.IsNullOrWhiteSpace(args)) return "ERROR: Usage: /raw <server command>";
+                    Server.ExecuteCommand(args);
+                    return $"Raw executed: {args}";
+                case "sendcmd":
+                    // Executes arbitrary server command if authorized (bypassing Debug check)
+                    if (string.IsNullOrWhiteSpace(args)) return "ERROR: Usage: /sendcmd <server command>";
+                    Server.ExecuteCommand(args);
+                    return $"Command executed: {args}";
+                default: return "ERROR: Unknown command.";
+            }
+        }
+
+        private string BuildHelpText()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("Available commands:");
+            sb.AppendLine("/help - Show this help");
+            sb.AppendLine("/players - Number of players online");
+            sb.AppendLine("/playerlist - Player names");
+            sb.AppendLine("/ridlist - Player user IDs");
+            sb.AppendLine("/broadcast <message> - Broadcast with default time");
+            sb.AppendLine("/bc <seconds> <message> - Broadcast");
+            sb.AppendLine("/cassie <message> - CASSIE message");
+            sb.AppendLine("/restart | /roundrestart - Restart round");
+            sb.AppendLine("/softrestart - Soft restart (if enabled)");
+            sb.AppendLine("/nuke | /stopnuke - Warhead control (if enabled)");
+            sb.AppendLine("/raw <command> - Execute raw server command (Debug=true)");
+            sb.AppendLine("/sendcmd <command> - Execute arbitrary server command (Authorized only)");
+            sb.AppendLine("/diger (custom) - Custom commands defined in config");
+            if (Config.CustomCommands != null && Config.CustomCommands.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Custom commands:");
+                foreach (var c in Config.CustomCommands.Where(x => x.Enabled))
+                    sb.AppendLine($"/{c.Name} - {c.Description ?? c.Command}");
+            }
+            return sb.ToString().TrimEnd();
+        }
+
+        private static IPAddress ResolveBindIp(string ip)
+        {
+            if (string.IsNullOrWhiteSpace(ip)) return IPAddress.Any;
+            try
+            {
+                var addrs = Dns.GetHostAddresses(ip);
+                var v4 = addrs.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+                if (v4 != null && IsLocalAddress(v4)) return v4;
+            }
+            catch { }
+            return IPAddress.Any;
+        }
+
+        private static bool IsLocalAddress(IPAddress address)
+        {
+            try
+            {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    var props = ni.GetIPProperties();
+                    foreach (var ua in props.UnicastAddresses)
+                    {
+                        if (ua.Address.AddressFamily == AddressFamily.InterNetwork && ua.Address.Equals(address)) return true;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+    }
+}
