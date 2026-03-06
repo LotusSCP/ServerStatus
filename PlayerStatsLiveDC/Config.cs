@@ -1,7 +1,7 @@
 using Exiled.API.Interfaces;
 using System.Collections.Generic;
 
-namespace PlayerStatsLiveDC
+namespace ServerStatus
 {
     public class Config : ConfigBase, IConfig
     {

@@ -3,15 +3,8 @@
   "WorkspaceRootPath": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\playerstatslivedc\\plugin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\plugin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|PlayerStatsLiveDC||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\plugin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\plugin.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\configbase.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -22,11 +15,18 @@
       "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\discordbot.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\playerstatslivedc\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\config.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|solutionrelative:playerstatslivedc\\class1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|5e9a8ac2-4f34-4521-858f-4c248ba31532"
+      "AbsoluteMoniker": "D:0:0:{00000000-0000-0000-0000-000000000000}|\u003CSolution\u003E|PlayerStatsLiveDC||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}|PlayerStatsLiveDC.csproj|c:\\users\\musta\\documents\\kartl\u0131 rol se\u00E7im\\vs\\playerstatslivedc\\playerstatslivedc\\||{B270807C-D8C6-49EB-8EBE-8E8D566637A1}|5e9a8ac2-4f34-4521-858f-4c248ba31532"
     }
   ],
   "DocumentGroupContainers": [
@@ -36,57 +36,19 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 5,
+          "SelectedChildIndex": 6,
           "Children": [
             {
               "$type": "Document",
               "DocumentIndex": 4,
-              "Title": "DiscordBot.cs",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\DiscordBot.cs",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\DiscordBot.cs",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\DiscordBot.cs",
-              "RelativeToolTip": "PlayerStatsLiveDC\\DiscordBot.cs",
-              "ViewState": "AgIAAAgAAAAAAAAAAAAhwCMAAAAAAAAAAAAAAA==",
+              "Title": "Class1.cs",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Class1.cs",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Class1.cs",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Class1.cs*",
+              "RelativeToolTip": "PlayerStatsLiveDC\\Class1.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-02T14:28:11.251Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ConfigBase.cs",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\ConfigBase.cs",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\ConfigBase.cs",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\ConfigBase.cs",
-              "RelativeToolTip": "PlayerStatsLiveDC\\ConfigBase.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAbAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-02T13:55:41.605Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Config.cs",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Config.cs",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Config.cs",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Config.cs",
-              "RelativeToolTip": "PlayerStatsLiveDC\\Config.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAA+AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-02T13:55:21.419Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "PlayerStatsLiveDC",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
-              "RelativeToolTip": "PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-03-02T13:54:38.952Z",
+              "WhenOpened": "2026-03-06T17:28:44.705Z",
               "EditorCaption": ""
             },
             {
@@ -95,28 +57,66 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Plugin.cs",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Plugin.cs",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Plugin.cs",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Plugin.cs",
-              "RelativeToolTip": "PlayerStatsLiveDC\\Plugin.cs",
-              "ViewState": "AgIAAIwBAAAAAAAAAAAwwMgBAAAAAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "DiscordBot.cs",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\DiscordBot.cs",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\DiscordBot.cs",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\DiscordBot.cs*",
+              "RelativeToolTip": "PlayerStatsLiveDC\\DiscordBot.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAAWAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-02T13:54:39.168Z",
+              "WhenOpened": "2026-03-06T17:28:32.818Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ConfigBase.cs",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\ConfigBase.cs",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\ConfigBase.cs",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\ConfigBase.cs*",
+              "RelativeToolTip": "PlayerStatsLiveDC\\ConfigBase.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-06T17:28:29.399Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Config.cs",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Config.cs",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Config.cs",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Config.cs*",
+              "RelativeToolTip": "PlayerStatsLiveDC\\Config.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-06T17:28:26.101Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
-              "Title": "Class1.cs",
-              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Class1.cs",
-              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Class1.cs",
-              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Class1.cs",
-              "RelativeToolTip": "PlayerStatsLiveDC\\Class1.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Title": "PlayerStatsLiveDC",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
+              "RelativeToolTip": "PlayerStatsLiveDC\\PlayerStatsLiveDC.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-03-06T17:27:08.088Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Plugin.cs",
+              "DocumentMoniker": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Plugin.cs",
+              "RelativeDocumentMoniker": "PlayerStatsLiveDC\\Plugin.cs",
+              "ToolTip": "C:\\Users\\musta\\Documents\\Kartl\u0131 Rol Se\u00E7im\\VS\\PlayerStatsLiveDC\\PlayerStatsLiveDC\\Plugin.cs*",
+              "RelativeToolTip": "PlayerStatsLiveDC\\Plugin.cs*",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-02T13:48:58.967Z",
+              "WhenOpened": "2026-03-06T17:26:55.718Z",
               "EditorCaption": ""
             }
           ]

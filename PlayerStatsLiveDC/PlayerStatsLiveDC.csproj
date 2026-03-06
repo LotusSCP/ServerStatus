@@ -7,8 +7,8 @@
     <ProjectGuid>{8640C7E2-0A29-4700-AE30-414A7FAFCB5A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PlayerStatsLiveDC</RootNamespace>
-    <AssemblyName>PlayerStatsLiveDC</AssemblyName>
+    <RootNamespace>ServerStatus</RootNamespace>
+    <AssemblyName>ServerStatus</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

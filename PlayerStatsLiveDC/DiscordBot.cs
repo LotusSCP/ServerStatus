@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exiled.API.Features;
 
-namespace PlayerStatsLiveDC
+namespace ServerStatus
 {
     // Minimal stub for Discord functionality. The original implementation relied on Discord.Net and
     // caused build errors when those assemblies weren't available. This stub allows the plugin to compile

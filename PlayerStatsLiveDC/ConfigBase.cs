@@ -1,4 +1,4 @@
-﻿namespace PlayerStatsLiveDC
+﻿namespace ServerStatus
 {
     public class ConfigBase
     {

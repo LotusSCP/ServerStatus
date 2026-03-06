@@ -11,15 +11,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PlayerStatsLiveDC
+namespace ServerStatus
 {
     // Full rewrite of Plugin to provide Discord webhook live player list functionality
     public class Plugin : Plugin<Config>
     {
-        public override string Name => "PlayerStatsLiveDC";
-        public override string Author => "Made By atombombasi_55908 (modified)";
-        public override Version Version => new Version(1, 4, 0);
-        public override Version RequiredExiledVersion => new Version(9, 12, 2);
+        public override string Name => "ServerStatus";
+        public override string Author => "Made By atombombasi_55908";
+        public override Version Version => new Version(1, 0, 0);
 
         public static Plugin Instance { get; private set; }
 
